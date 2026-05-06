@@ -1,35 +1,33 @@
-﻿using LabApi.Events.CustomHandlers;
+﻿using Exiled.API.Features;
+using LabApi.Events.CustomHandlers;
 using LabApi.Features.Console;
 using UserSettings.ServerSpecific;
-using LabApi.Loader;
 
 namespace Timers
 {
-    public class Plugin : LabApi.Loader.Features.Plugins.Plugin
+    public class Plugin : Plugin<Config, Translation>
     {
+        private Events events = null!;
 
-        private Events _events = null!;
         public override string Name => "Timers";
+
         public override string Author => "LumiFae";
+
+        public override string Prefix => "Timers";
+
         public override Version Version => new(1, 5, 1);
-        
-        public override string Description { get; } = "Adds countdown timers to the respawn UI";
-        public override Version RequiredApiVersion { get; } = new (1, 0, 2);
 
         public static Plugin Instance { private set; get; } = null!;
 
-        public Translation Translation { get; private set; } = null!;
-        public Config Config { get; private set; } = null!;
-
         internal SSTwoButtonsSetting Setting { get; private set; } = null!;
 
-        public override void Enable()
+        public override void OnEnabled()
         {
             Logger.Debug("Enabling plugin...", Config.Debug);
             Instance = this;
 
-            _events = new();
-            CustomHandlersManager.RegisterEventsHandler(_events);
+            events = new();
+            CustomHandlersManager.RegisterEventsHandler(events);
 
             ServerSpecificSettingsSync.ServerOnSettingValueReceived += Events.OnSettingUpdated;
 
@@ -41,19 +39,11 @@ namespace Timers
             ServerSpecificSettingsSync.SendToAll();
         }
 
-        public override void Disable()
+        public override void OnDisabled()
         {
-            CustomHandlersManager.UnregisterEventsHandler(_events);   
+            CustomHandlersManager.UnregisterEventsHandler(events);   
             ServerSpecificSettingsSync.ServerOnSettingValueReceived -= Events.OnSettingUpdated;
-            _events = null!;
-        }
-        
-        public override void LoadConfigs()
-        {
-            this.TryLoadConfig("config.yml", out Config? config);
-            Config = config ?? new Config();
-            this.TryLoadConfig("translation.yml", out Translation? translation);
-            Translation = translation ?? new Translation();
+            events = null!;
         }
     }
 }
